@@ -5,10 +5,9 @@ from .config import OWNED_NAME
 from .model import Item
 
 DEFAULT_WARBONDS = [
-    'Helldivers Mobilize!', 'Steeled Veterans', 'Democratic Detonation',
-    'Urban Legends', 'Servants of Freedom', 'Control Group', 'Dust Devils',
-    'Python Commandos', 'Siege Breakers', 'Borderline Justice',
-    'Entrenched Division', "Castellan's Creed",
+    'Helldivers Mobilize!', 'Steeled Veterans', 'Urban Legends',
+    'Servants of Freedom', 'Borderline Justice', 'Control Group', 'Dust Devils',
+    'Python Commandos', 'Siege Breakers', 'Entrenched Division',
 ]
 
 @dataclass
@@ -86,7 +85,12 @@ def owns_by_source(item: Item, selected_warbonds: set[str], base=True,
 
     if source_matches_warbond(item.source, selected_warbonds):
         return True
-    if base and any(k in (item.source or '').casefold() for k in ('starter equipment', 'free')):
+    # Explicitly reject items from unselected warbonds
+    warbond_keywords = ('warbond','mobilize','veterans','cutting edge','democratic','polar','viper','freedom','chemical','truth','urban','servants','borderline','masters','force of law','control group','dust devils','python commandos','redacted regiment','siege breakers','entrenched division','exo experts','obedient democracy','righteous revenants','castellan')
+    s = (item.source or '').casefold()
+    if any(token in s for token in warbond_keywords):
+        return False
+    if base and any(k in s for k in ('starter equipment', 'free')):
         return True
     return False
 

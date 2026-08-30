@@ -20,6 +20,30 @@ def fit_image(path:Path,mw,mh):
     with Image.open(path) as im:w,h=im.size
     s=min(mw/w,mh/h);return w*s,h*s
 
+def compress_image(image_path: Path, max_width: int = 300, quality: int = 85) -> Path:
+    '''Compress image to reduce PDF size while maintaining quality for display.'''
+    try:
+       with Image.open(image_path) as img:
+           # Convert to RGB if necessary (for PNG with transparency)
+           if img.mode in ('RGBA', 'LA', 'P'):
+               rgb_img = Image.new('RGB', img.size, (255, 255, 255))
+               rgb_img.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+               img = rgb_img
+            
+           # Resize if too large
+           if img.width > max_width:
+               ratio = max_width / img.width
+               new_height = int(img.height * ratio)
+               img = img.resize((max_width, new_height), Image.Resampling.LANCZOS)
+            
+           # Save compressed version
+           compressed_path = image_path.with_stem(image_path.stem + '_compressed')
+           img.save(compressed_path, 'JPEG', quality=quality, optimize=True)
+           return compressed_path
+    except Exception as e:
+       # If compression fails, return original
+       return image_path
+
 def _code(code):
     if not code:return ''
     symbols={'up':'↑','down':'↓','left':'←','right':'→','u':'↑','d':'↓','l':'←','r':'→'}
@@ -65,11 +89,14 @@ def build_pdf(items:list[Item],warbonds:list[str],extras:set[str])->Path:
         story.append(Paragraph(heading,h))
         rows=[];cells=[]
         for x in group:
-            p=download(x.image_url,x.key); w,hh=fit_image(p,42*mm,28*mm); img=RImage(str(p),width=w,height=hh)
+            p=download(x.image_url,x.key)
+            p=compress_image(p, max_width=300, quality=85)
+            w,hh=fit_image(p,42*mm,28*mm); img=RImage(str(p),width=w,height=hh)
             extras_txt=''
             if kind=='stratagem': extras_txt=f'<br/>{_code(x.stratagem_code)}'
             stats=''
             if kind=='armor': stats=' · '.join(f'{k}: {v}' for k,v in x.stats.items() if k in ('armor','speed','stamina','passive'))
+            if kind=='booster': stats=(x.stats.get('description','') or '')
             content=[img,Paragraph(f'<b>{x.title}</b>{extras_txt}<br/>{stats}<br/><font size="4.5">{x.acquisition or x.source}</font>',card)]
             if kind=='stratagem' and x.stratagem_code:
                 content.insert(1,arrow_strip(x.stratagem_code))

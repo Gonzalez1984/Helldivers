@@ -87,14 +87,18 @@ def parse_warbond_rewards(html:str, warbond:str)->list[Item]:
 def parse_catalog(html:str, kind:str, default_source='') -> list[Item]:
     out=[]
     for headers,rows in table_rows(html):
-        if 'name' not in headers and 'item' not in headers: continue
-        namecol='name' if 'name' in headers else 'item'
+        if 'name' not in headers and 'item' not in headers and 'booster' not in headers: continue
+        namecol=None
+        if 'name' in headers: namecol='name'
+        elif 'item' in headers: namecol='item'
+        elif 'booster' in headers: namecol='booster'
+        if not namecol: continue
         for row in rows:
             link=extract_link(row[namecol]);
             if not link: continue
             title,_=link
             vals={k:clean(v.get_text(' ',strip=True)) for k,v in row.items()}
-            source=vals.get('source',vals.get('acquisition',default_source))
+            source=vals.get('source',vals.get('acquisition',vals.get('warbond',default_source)))
             out.append(Item(title,kind,page_url(title),source=source,acquisition=source,stats=vals))
     return list({x.key:x for x in out}.values())
 

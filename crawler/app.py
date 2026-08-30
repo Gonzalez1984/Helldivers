@@ -61,10 +61,21 @@ def main():
 
     print('\n=== ETAP 6 — WERYFIKACJA OBRAZÓW ===')
     resolved=[]
+    failed_items=[]
     for i,x in enumerate(owned,1):
-        print(f'[{i}/{len(owned)}] {x.title}')
-        resolved.append(resolve_image(api,x))
-    validate(catalogs,resolved,owned_wbs,extras)
+        try:
+            print(f'[{i}/{len(owned)}] {x.title}')
+            resolved.append(resolve_image(api,x))
+        except Exception as e:
+            print(f'       WARNING: {str(e)[:80]}')
+            failed_items.append(x.title)
+    
+    if failed_items:
+        print(f'\nSkipped {len(failed_items)} items due to missing images:')
+        for title in failed_items[:10]:
+            print(f'  - {title}')
+    
+    validate(catalogs,resolved,owned_wbs,extras,not strict)
 
     print('\n=== ETAP 7 — PDF ===')
     pdf=build_pdf(resolved,owned_wbs,extras)

@@ -8,12 +8,12 @@ from .parse import parse_warbond_rewards
 # not a UI icon, logo, banner or unrelated gallery image.
 BAD=('arrow','fallback','background','logo','banner','medal','icon background','map','flag','template')
 PREF_BY_KIND={
- 'primary':('primary render','weapon render','primary weapon','render'),
- 'secondary':('secondary render','weapon render','secondary weapon','render'),
+ 'primary':('primary render','primary weapon','weapon render','render'),
+ 'secondary':('secondary render','secondary weapon','weapon render','render'),
  'throwable':('throwable render','grenade render','throwable','render'),
- 'booster':('booster icon','booster render','booster'),
+ 'booster':('booster render','booster'),
  'armor':('armor set','body armor','armor render','render'),
- 'stratagem':('stratagem icon',),
+ 'stratagem':('stratagem icon render','stratagem icon png','stratagem icon'),
 }
 
 def _score(filename:str,kind:str)->int:
@@ -21,7 +21,7 @@ def _score(filename:str,kind:str)->int:
     if any(b in n for b in BAD): score-=100
     for i,p in enumerate(PREF_BY_KIND[kind]):
         if p in n: score += 40-i*5
-    if n.endswith('.svg') and kind!='stratagem': score-=3
+    if n.endswith('.svg'): score-=50
     return score
 
 def resolve_image(api:WikiAPI,item:Item)->Item:
@@ -33,14 +33,25 @@ def resolve_image(api:WikiAPI,item:Item)->Item:
     errors=[]
     for filename in candidates[:30]:
         try:
+            # Skip SVG files - they can't be embedded directly in PDFs
+            if filename.lower().endswith('.svg'):
+                continue
             info=api.imageinfo(filename)
-            if not info.get('mime','').startswith('image/'): continue
-            if _score(filename,item.kind)<0: continue
-            item.image_file=filename; item.image_url=info.get('thumburl') or info.get('url')
+            # imageinfo returns a dict with image info
+            if not isinstance(info, dict):
+                errors.append(f'imageinfo returned non-dict: {type(info)}')
+                continue
+            if not info.get('mime','').startswith('image/'): 
+                continue
+            if _score(filename,item.kind)<0: 
+                continue
+            item.image_file=filename
+            item.image_url=info.get('thumburl') or info.get('url')
             item.image_sha1=info.get('sha1')
             item.image_license=(info.get('extmetadata',{}).get('LicenseShortName',{}).get('value') or '')
             return item
-        except Exception as e: errors.append(str(e))
+        except Exception as e: 
+            errors.append(str(e))
     raise RuntimeError(f'No trustworthy image for {item.title}: {errors[-3:]}')
 
 def extract_warbond(api:WikiAPI,warbond:str)->list[Item]:
