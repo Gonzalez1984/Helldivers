@@ -87,11 +87,14 @@ def build_pdf(items:list[Item],warbonds:list[str],extras:set[str])->Path:
         group=sorted([x for x in items if x.kind==kind],key=lambda x:x.title.casefold())
         if not group:continue
         story.append(Paragraph(heading,h))
+        cols_per_row = 5 if kind=='stratagem' else 3
         rows=[];cells=[]
         for x in group:
             p=download(x.image_url,x.key)
-            p=compress_image(p, max_width=300, quality=85)
-            w,hh=fit_image(p,42*mm,28*mm); img=RImage(str(p),width=w,height=hh)
+            p=compress_image(p, max_width=150 if kind=='stratagem' else 300, quality=85)
+            max_w = 25*mm if kind=='stratagem' else 42*mm
+            max_h = 25*mm if kind=='stratagem' else 28*mm
+            w,hh=fit_image(p,max_w,max_h); img=RImage(str(p),width=w,height=hh)
             extras_txt=''
             if kind=='stratagem': extras_txt=f'<br/>{_code(x.stratagem_code)}'
             stats=''
@@ -101,11 +104,12 @@ def build_pdf(items:list[Item],warbonds:list[str],extras:set[str])->Path:
             if kind=='stratagem' and x.stratagem_code:
                 content.insert(1,arrow_strip(x.stratagem_code))
             cells.append(content)
-            if len(cells)==3:rows.append(cells);cells=[]
+            if len(cells)==cols_per_row:rows.append(cells);cells=[]
         if cells:
-            while len(cells)<3:cells.append('')
+            while len(cells)<cols_per_row:cells.append([])
             rows.append(cells)
-        t=Table(rows,colWidths=[64*mm]*3,hAlign='LEFT')
+        col_width = 40*mm if kind=='stratagem' else 64*mm
+        t=Table(rows,colWidths=[col_width]*cols_per_row,hAlign='LEFT')
         t.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('BOX',(0,0),(-1,-1),.35,colors.grey),('INNERGRID',(0,0),(-1,-1),.2,colors.lightgrey),('LEFTPADDING',(0,0),(-1,-1),1.5*mm),('RIGHTPADDING',(0,0),(-1,-1),1.5*mm),('TOPPADDING',(0,0),(-1,-1),1.5*mm),('BOTTOMPADDING',(0,0),(-1,-1),1.5*mm)]))
         story += [t,Spacer(1,4*mm)]
     story += [PageBreak(),Paragraph('AUDIT — WHY IS THIS ITEM HERE?',h)]

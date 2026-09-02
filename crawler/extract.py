@@ -13,7 +13,7 @@ PREF_BY_KIND={
  'throwable':('throwable render','grenade render','throwable','render'),
  'booster':('booster render','booster'),
  'armor':('armor set','body armor','armor render','render'),
- 'stratagem':('stratagem icon render','stratagem icon png','stratagem icon'),
+ 'stratagem':('stratagem icon','icon'),
 }
 
 def _score(filename:str,kind:str)->int:

@@ -64,6 +64,7 @@ def is_mission_stratagem(item: Item) -> bool:
     mission_terms = (
         'mission stratagem', 'mission', 'objective', 'temporary permit',
         'weapons augmentation', 'major order temporary',
+        'hive breaker', 'hellbomb', 'video camera', 'drill',  # Known mission-only items
     )
     return any(t in s for t in mission_terms)
 
@@ -75,6 +76,11 @@ def owns_by_source(item: Item, selected_warbonds: set[str], base=True,
             return False
         if source_matches_warbond(item.source, selected_warbonds):
             return True
+        # Reject strategies from unselected warbonds
+        warbond_keywords = ('warbond','mobilize','veterans','cutting edge','democratic','polar','viper','freedom','chemical','truth','urban','servants','borderline','masters','force of law','control group','dust devils','python commandos','redacted regiment','siege breakers','entrenched division','exo experts','obedient democracy','righteous revenants','castellan')
+        s = (item.source or '').casefold()
+        if any(token in s for token in warbond_keywords):
+            return False
         # User explicitly asked us to assume all ordinary/basic stratagems and
         # things acquired along the way are already owned. This covers the
         # normal Ship Management tree, including Support Weapons, Backpacks,
