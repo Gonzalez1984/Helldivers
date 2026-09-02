@@ -128,11 +128,34 @@ def parse_stratagem_catalog(html:str)->list[Item]:
                 src=img.get('src','')
                 token=(alt or src.rsplit('/',1)[-1]).replace('.svg','').replace('Stratagem Arrow ','').strip()
                 if token: code.append(token)
+            # Extract icon URL from Icon column if present
+            icon_url=None
+            if 'icon' in headers:
+                icon_cell=row.get('icon')
+                if icon_cell:
+                    # Try to find img tag with src
+                    icon_img=icon_cell.find('img')
+                    if icon_img and icon_img.get('src'):
+                        icon_src=icon_img.get('src')
+                        # Icon URL likely points to SVG, but we need to try PNG version
+                        # The actual icon file on wiki is typically the PNG (rendered version)
+                        # Replace .svg with .png and use full URL
+                        if icon_src.endswith('.svg') or '.svg?' in icon_src:
+                            # Try to convert to PNG URL format
+                            # e.g., /images/Supply_Pack_Stratagem_Icon_Background.svg?xxx
+                            # becomes /images/Supply_Pack_Stratagem_Icon_Background.png
+                            icon_src_base=icon_src.split('?')[0].replace('.svg', '.png')
+                            icon_url=icon_src_base
+                        else:
+                            icon_url=icon_src
             source=vals.get('source','')
             # The catalog's Objective/Mission tables are not permanent loadout
             # options. Keep them in the parser's data model only long enough for
             # validation, where they are rejected from ownership.
-            out.append(Item(title,'stratagem',page_url(title),source=source,acquisition=source,stats=vals,stratagem_code=code))
+            item=Item(title,'stratagem',page_url(title),source=source,acquisition=source,stats=vals,stratagem_code=code)
+            if icon_url:
+                item.stats['icon_url']=icon_url
+            out.append(item)
     return list({x.key:x for x in out}.values())
 
 def parse_weapons_from_category(titles:list[str], kind:str)->list[Item]:

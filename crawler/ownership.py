@@ -64,7 +64,13 @@ def is_mission_stratagem(item: Item) -> bool:
     mission_terms = (
         'mission stratagem', 'mission', 'objective', 'temporary permit',
         'weapons augmentation', 'major order temporary',
-        'hive breaker', 'hellbomb', 'video camera', 'drill', 'illumination flare',  # Known mission-only items
+        # Mission-only stratagems from wiki
+        'activate e-711', 'aquifer drill', 'call in super destroyer', 
+        'cargo container', 'dark fluid vessel', 'eagle rearm', 'hive breaker',
+        'hellbomb', 'portable comms relay', 'prospecting drill', 'reinforce',
+        'reinforcement pods', 'resupply', 'seaf artillery', 'seismic probe',
+        'sos beacon', 'sssd delivery', 'super earth flag', 'tactical video camera',
+        'tectonic drill', 'upload data', 'orbital illumination flare',
     )
     return any(t in s for t in mission_terms)
 

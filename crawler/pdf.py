@@ -21,21 +21,29 @@ def fit_image(path:Path,mw,mh):
     s=min(mw/w,mh/h);return w*s,h*s
 
 def compress_image(image_path: Path, max_width: int = 300, quality: int = 85) -> Path:
-    '''Compress image to reduce PDF size while maintaining quality for display.'''
+    '''Compress image to reduce PDF size while maintaining quality for display.
+    For SVG files, returns the original path and lets PIL handle rendering via URL.'''
     try:
+       # Skip SVG conversion - PIL and reportlab should handle SVG URLs directly
+       if image_path.suffix.lower() == '.svg':
+           # SVG files should be handled via their URL in the PDF layer
+           # not converted locally
+           return image_path
+        
        with Image.open(image_path) as img:
+           w, h = img.size
            # Convert to RGB if necessary (for PNG with transparency)
            if img.mode in ('RGBA', 'LA', 'P'):
                rgb_img = Image.new('RGB', img.size, (255, 255, 255))
                rgb_img.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
                img = rgb_img
-            
+             
            # Resize if too large
            if img.width > max_width:
                ratio = max_width / img.width
                new_height = int(img.height * ratio)
                img = img.resize((max_width, new_height), Image.Resampling.LANCZOS)
-            
+             
            # Save compressed version
            compressed_path = image_path.with_stem(image_path.stem + '_compressed')
            img.save(compressed_path, 'JPEG', quality=quality, optimize=True)
@@ -94,7 +102,27 @@ def build_pdf(items:list[Item],warbonds:list[str],extras:set[str])->Path:
             p=compress_image(p, max_width=150 if kind=='stratagem' else 300, quality=85)
             max_w = 25*mm if kind=='stratagem' else 42*mm
             max_h = 25*mm if kind=='stratagem' else 28*mm
-            w,hh=fit_image(p,max_w,max_h); img=RImage(str(p),width=w,height=hh)
+             
+            # Handle SVG files using svglib
+            if str(p).lower().endswith('.svg'):
+                try:
+                    drawing = svg2rlg(str(p))
+                    if drawing:
+                        # Scale drawing to fit dimensions
+                        scale = min(max_w / max(drawing.width, 1), max_h / max(drawing.height, 1))
+                        drawing.scale(scale, scale)
+                        img = drawing
+                    else:
+                        # Fallback if svg2rlg fails
+                        w, hh = fit_image(p, max_w, max_h)
+                        img = RImage(str(p), width=w, height=hh)
+                except Exception:
+                    # Fallback to regular image if SVG rendering fails
+                    w, hh = fit_image(p, max_w, max_h)
+                    img = RImage(str(p), width=w, height=hh)
+            else:
+                w, hh = fit_image(p, max_w, max_h)
+                img = RImage(str(p), width=w, height=hh)
             extras_txt=''
             if kind=='stratagem': extras_txt=f'<br/>{_code(x.stratagem_code)}'
             stats=''
