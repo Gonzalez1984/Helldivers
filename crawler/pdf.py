@@ -78,7 +78,9 @@ def build_pdf(items:list[Item],warbonds:list[str],extras:set[str])->Path:
             path=download(info.get('url') or info.get('thumburl'),f'arrow:{name}')
             drawing=svg2rlg(str(path))
             if drawing:
-                scale=min(7*mm/max(drawing.width,1),7*mm/max(drawing.height,1));drawing.scale(scale,scale);arrow_drawings[name]=drawing
+                scale=min(7*mm/max(drawing.width,1),7*mm/max(drawing.height,1))
+                drawing.width*=scale; drawing.height*=scale; drawing.scale(scale,scale)
+                arrow_drawings[name]=drawing
     except Exception:
         arrow_drawings={}
 
@@ -107,7 +109,13 @@ def build_pdf(items:list[Item],warbonds:list[str],extras:set[str])->Path:
             max_w = 12*mm if kind=='stratagem' else 42*mm
             max_h = 12*mm if kind=='stratagem' else 28*mm
             if p.suffix.lower()=='.svg':
-                img = Paragraph('[icon]', tiny)
+                drawing=svg2rlg(str(p))
+                if drawing and drawing.width and drawing.height:
+                    scale=min(max_w/drawing.width,max_h/drawing.height)
+                    drawing.width*=scale; drawing.height*=scale; drawing.scale(scale,scale)
+                    img=drawing
+                else:
+                    img = Paragraph('[icon]', tiny)
             else:
                 w, hh = fit_image(p, max_w, max_h)
                 img = RImage(str(p), width=w, height=hh)
