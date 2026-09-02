@@ -17,6 +17,8 @@ from .model import Item
 SECTIONS=[('stratagem','STRATAGEMS'),('primary','PRIMARY'),('secondary','SECONDARY'),('throwable','GRENADES / THROWABLES'),('armor','ARMOR'),('booster','BOOSTERS')]
 
 def fit_image(path:Path,mw,mh):
+    if path.suffix.lower()=='.svg':
+        return mw, mh
     with Image.open(path) as im:w,h=im.size
     s=min(mw/w,mh/h);return w*s,h*s
 
@@ -58,7 +60,9 @@ def _code(code):
     return ' '.join(symbols.get(x.casefold(),x) for x in code)
 
 def build_pdf(items:list[Item],warbonds:list[str],extras:set[str])->Path:
-    doc=SimpleDocTemplate(str(PDF_NAME),pagesize=A4,leftMargin=8*mm,rightMargin=8*mm,topMargin=8*mm,bottomMargin=8*mm,title='Helldivers 2 Owned Loadout Manual')
+    tmp_path=PDF_NAME.with_name(PDF_NAME.stem + '.tmp.pdf')
+    out_path=PDF_NAME.with_name(PDF_NAME.stem + '.new.pdf')
+    doc=SimpleDocTemplate(str(out_path),pagesize=A4,leftMargin=8*mm,rightMargin=8*mm,topMargin=8*mm,bottomMargin=8*mm,title='Helldivers 2 Owned Loadout Manual')
     st=getSampleStyleSheet(); title=ParagraphStyle('T',parent=st['Title'],fontSize=18,leading=20,alignment=TA_CENTER); h=ParagraphStyle('H',parent=st['Heading1'],fontSize=14,leading=16,spaceAfter=4*mm); card=ParagraphStyle('C',parent=st['BodyText'],fontSize=7,leading=8); tiny=ParagraphStyle('S',parent=st['BodyText'],fontSize=5.2,leading=6)
 
     # Resolve the wiki's actual Stratagem Arrow SVGs once. These are the same
@@ -99,27 +103,11 @@ def build_pdf(items:list[Item],warbonds:list[str],extras:set[str])->Path:
         rows=[];cells=[]
         for x in group:
             p=download(x.image_url,x.key)
-            p=compress_image(p, max_width=150 if kind=='stratagem' else 300, quality=85)
-            max_w = 25*mm if kind=='stratagem' else 42*mm
-            max_h = 25*mm if kind=='stratagem' else 28*mm
-             
-            # Handle SVG files using svglib
-            if str(p).lower().endswith('.svg'):
-                try:
-                    drawing = svg2rlg(str(p))
-                    if drawing:
-                        # Scale drawing to fit dimensions
-                        scale = min(max_w / max(drawing.width, 1), max_h / max(drawing.height, 1))
-                        drawing.scale(scale, scale)
-                        img = drawing
-                    else:
-                        # Fallback if svg2rlg fails
-                        w, hh = fit_image(p, max_w, max_h)
-                        img = RImage(str(p), width=w, height=hh)
-                except Exception:
-                    # Fallback to regular image if SVG rendering fails
-                    w, hh = fit_image(p, max_w, max_h)
-                    img = RImage(str(p), width=w, height=hh)
+            p=compress_image(p, max_width=96 if kind=='stratagem' else 300, quality=85)
+            max_w = 12*mm if kind=='stratagem' else 42*mm
+            max_h = 12*mm if kind=='stratagem' else 28*mm
+            if p.suffix.lower()=='.svg':
+                img = Paragraph('[icon]', tiny)
             else:
                 w, hh = fit_image(p, max_w, max_h)
                 img = RImage(str(p), width=w, height=hh)
@@ -136,7 +124,7 @@ def build_pdf(items:list[Item],warbonds:list[str],extras:set[str])->Path:
         if cells:
             while len(cells)<cols_per_row:cells.append([])
             rows.append(cells)
-        col_width = 40*mm if kind=='stratagem' else 64*mm
+        col_width = 24*mm if kind=='stratagem' else 64*mm
         t=Table(rows,colWidths=[col_width]*cols_per_row,hAlign='LEFT')
         t.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('BOX',(0,0),(-1,-1),.35,colors.grey),('INNERGRID',(0,0),(-1,-1),.2,colors.lightgrey),('LEFTPADDING',(0,0),(-1,-1),1.5*mm),('RIGHTPADDING',(0,0),(-1,-1),1.5*mm),('TOPPADDING',(0,0),(-1,-1),1.5*mm),('BOTTOMPADDING',(0,0),(-1,-1),1.5*mm)]))
         story += [t,Spacer(1,4*mm)]
@@ -145,4 +133,5 @@ def build_pdf(items:list[Item],warbonds:list[str],extras:set[str])->Path:
     for x in sorted(items,key=lambda z:(z.kind,z.title.casefold())):audit.append([x.kind,x.title,x.acquisition or x.source or 'explicit',x.url])
     t=Table(audit,colWidths=[20*mm,50*mm,55*mm,55*mm],repeatRows=1);t.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),colors.lightgrey),('GRID',(0,0),(-1,-1),.25,colors.grey),('FONTSIZE',(0,0),(-1,-1),5),('LEADING',(0,0),(-1,-1),6),('VALIGN',(0,0),(-1,-1),'TOP')]))
     story += [t,Spacer(1,4*mm),Paragraph(f'Source: https://helldivers.wiki.gg/wiki/ — {WIKI_LICENSE}. Helldivers and associated assets are property of their respective owners. Personal reference use.',tiny)]
-    doc.build(story);return PDF_NAME
+    doc.build(story)
+    return out_path

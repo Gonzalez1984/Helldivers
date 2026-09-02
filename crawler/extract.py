@@ -25,34 +25,21 @@ def _score(filename:str,kind:str)->int:
     return score
 
 def resolve_image(api:WikiAPI,item:Item)->Item:
-    # For stratagems, prioritize icon files (even if SVG - we'll convert them to PNG in PDF layer)
+    # Stratagems expose their correct icon directly in the parsed table.
+    # Use that source instead of page images, which are noisy background assets.
     if item.kind=='stratagem':
-        page=api.pages([item.title],prop='images')
-        if page:
-            filenames=[x['title'] for x in page[0].get('images',[])]
-            # Find icon files (either PNG or SVG)
-            icon_files=[f for f in filenames if 'icon' in f.lower() and f.lower().endswith(('.png', '.svg'))]
-            
-            # Prioritize PNG, then SVG
-            icon_files_png=[f for f in icon_files if f.lower().endswith('.png')]
-            icon_files_svg=[f for f in icon_files if f.lower().endswith('.svg')]
-            
-            for icon_file in icon_files_png + icon_files_svg:
-                try:
-                    info=api.imageinfo(icon_file)
-                    if not isinstance(info, dict):
-                        continue
-                    
-                    # Accept both raster (image/png) and vector (image/svg+xml)
-                    mime=info.get('mime','')
-                    if mime.startswith('image/'):
-                        item.image_file=icon_file
-                        item.image_url=info.get('thumburl') or info.get('url')
-                        item.image_sha1=info.get('sha1')
-                        item.image_license=(info.get('extmetadata',{}).get('LicenseShortName',{}).get('value') or '')
-                        return item
-                except Exception:
-                    pass
+        icon_file=item.stats.get('icon_file') if item.stats else None
+        if icon_file:
+            try:
+                info=api.imageinfo(icon_file, width=64)
+                if isinstance(info, dict) and info.get('mime','').startswith('image/'):
+                    item.image_file=icon_file
+                    item.image_url=info.get('thumburl') or info.get('url')
+                    item.image_sha1=info.get('sha1')
+                    item.image_license=(info.get('extmetadata',{}).get('LicenseShortName',{}).get('value') or '')
+                    return item
+            except Exception:
+                pass
     
     page=api.pages([item.title],prop='images')
     if not page: raise RuntimeError(f'No page image list: {item.title}')
