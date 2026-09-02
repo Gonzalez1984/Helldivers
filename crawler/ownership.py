@@ -64,7 +64,7 @@ def is_mission_stratagem(item: Item) -> bool:
     mission_terms = (
         'mission stratagem', 'mission', 'objective', 'temporary permit',
         'weapons augmentation', 'major order temporary',
-        'hive breaker', 'hellbomb', 'video camera', 'drill',  # Known mission-only items
+        'hive breaker', 'hellbomb', 'video camera', 'drill', 'illumination flare',  # Known mission-only items
     )
     return any(t in s for t in mission_terms)
 
