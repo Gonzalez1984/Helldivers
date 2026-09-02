@@ -1,14 +1,17 @@
 from __future__ import annotations
 from collections import Counter
 from .model import Item
+from .ownership import is_mission_stratagem
 
-def validate(catalogs:dict[str,list[Item]],owned:list[Item],warbonds:list[str],extras:set[str]):
+def validate(catalogs:dict[str,list[Item]],owned:list[Item],warbonds:list[str],extras:set[str],assume_all_non_mission_stratagems=True):
     if not owned: raise RuntimeError('Ownership result is empty; refusing to generate PDF.')
     keys=[x.key for x in owned]; dup=[k for k,n in Counter(keys).items() if n>1]
     if dup: raise RuntimeError(f'Duplicate canonical IDs: {dup}')
     for x in owned:
         if not x.url.startswith('https://helldivers.wiki.gg/wiki/'): raise RuntimeError(x.url)
-        if x.kind=='stratagem' and not (x.source or x.title in extras): raise RuntimeError(f'No ownership evidence: {x.title}')
+        if x.kind=='stratagem':
+            has_evidence = x.source or x.title in extras or (assume_all_non_mission_stratagems and not is_mission_stratagem(x))
+            if not has_evidence: raise RuntimeError(f'No ownership evidence: {x.title}')
     # Ensure every selected Warbond is actually represented in the catalog.
     for wb in warbonds:
         if not any((wb.casefold() in (x.source or '').casefold()) for xs in catalogs.values() for x in xs):

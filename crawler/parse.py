@@ -87,14 +87,18 @@ def parse_warbond_rewards(html:str, warbond:str)->list[Item]:
 def parse_catalog(html:str, kind:str, default_source='') -> list[Item]:
     out=[]
     for headers,rows in table_rows(html):
-        if 'name' not in headers and 'item' not in headers: continue
-        namecol='name' if 'name' in headers else 'item'
+        if 'name' not in headers and 'item' not in headers and 'booster' not in headers: continue
+        namecol=None
+        if 'name' in headers: namecol='name'
+        elif 'item' in headers: namecol='item'
+        elif 'booster' in headers: namecol='booster'
+        if not namecol: continue
         for row in rows:
             link=extract_link(row[namecol]);
             if not link: continue
             title,_=link
             vals={k:clean(v.get_text(' ',strip=True)) for k,v in row.items()}
-            source=vals.get('source',vals.get('acquisition',default_source))
+            source=vals.get('source',vals.get('acquisition',vals.get('warbond',default_source)))
             out.append(Item(title,kind,page_url(title),source=source,acquisition=source,stats=vals))
     return list({x.key:x for x in out}.values())
 
@@ -124,9 +128,27 @@ def parse_stratagem_catalog(html:str)->list[Item]:
                 src=img.get('src','')
                 token=(alt or src.rsplit('/',1)[-1]).replace('.svg','').replace('Stratagem Arrow ','').strip()
                 if token: code.append(token)
+            # Extract icon URL from Icon column if present
+            icon_file=None
+            if 'icon' in headers:
+                icon_cell=row.get('icon')
+                if icon_cell:
+                    icon_link=icon_cell.find('a', href=True)
+                    if icon_link and '/wiki/File:' in icon_link['href']:
+                        icon_file=icon_link['href'].split('/wiki/File:',1)[1]
             source=vals.get('source','')
             # The catalog's Objective/Mission tables are not permanent loadout
             # options. Keep them in the parser's data model only long enough for
             # validation, where they are rejected from ownership.
-            out.append(Item(title,'stratagem',page_url(title),source=source,acquisition=source,stats=vals,stratagem_code=code))
+            item=Item(title,'stratagem',page_url(title),source=source,acquisition=source,stats=vals,stratagem_code=code)
+            if icon_file:
+                item.stats['icon_file']=icon_file
+            out.append(item)
     return list({x.key:x for x in out}.values())
+
+def parse_weapons_from_category(titles:list[str], kind:str)->list[Item]:
+    '''Parse weapons from category member list. All base weapons are free/starter equipment.'''
+    out=[]
+    for title in titles:
+        out.append(Item(title,kind,page_url(title),source='Free Starter Equipment',acquisition='Free',stats={}))
+    return out

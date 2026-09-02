@@ -1,0 +1,45 @@
+=== FIRST 3000 CHARS OF RENDERED HTML ===
+<div class="mw-content-ltr mw-parser-output" lang="en" dir="ltr"><div class="redirectMsg"><p>Redirect to:</p><ul class="redirectText"><li><a href="/wiki/Stratagems" title="Stratagems">Stratagems</a></li></ul></div><div class="msgbox noexcerpt searchaux msgbox-yellow" style="max-width: 90%;">
+<div id="msgbox-icon">  
+</div>
+<div style="width: 100%;"><b>This page is a <a href="https://en.wikipedia.org/wiki/REDIRECT" class="extiw" title="wp:REDIRECT">redirect</a>:</b>&#160;
+<div id="msgbox-text">
+<ul><li>From a singular to a plural term.</li></ul></div>
+</div>
+</div>
+<!-- 
+NewPP limit report
+Cached time: 20260825194127
+Cache expiry: 2592000
+Reduced expiry: false
+Complications: []
+CPU time usage: 0.013 seconds
+Real time usage: 0.018 seconds
+Preprocessor visited node count: 140/1000000
+Revision size: 40/4194304 bytes
+Post‐expand include size: 1212/4194304 bytes
+Template argument size: 342/4194304 bytes
+Highest expansion depth: 12/100
+Expensive parser function count: 0/500
+Unstrip recursion depth: 0/20
+Unstrip post‐expand size: 0/10000000 bytes
+ExtLoops count: 0/5000
+-->
+<!--
+Transclusion expansion time report (%,ms,calls,template)
+100.00%   10.743      1 Template:Redr
+100.00%   10.743      1 -total
+ 74.05%    7.955      1 Template:Message_box
+ 33.02%    3.547      1 Template:Redr/Reason
+-->
+
+<!-- Saved in parser cache with key helldivers_en:pcache:idhash:3763-0!canonical and timestamp 20260825194127 and revision id 111181. Rendering was triggered because: api-parse
+ -->
+</div>
+
+=== MAIN HEADINGS ===
+
+=== TABLE COUNT ===
+  Total tables: 0
+
+=== MAIN BODY DIVS ===

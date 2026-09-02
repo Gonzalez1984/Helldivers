@@ -17,8 +17,42 @@ from .model import Item
 SECTIONS=[('stratagem','STRATAGEMS'),('primary','PRIMARY'),('secondary','SECONDARY'),('throwable','GRENADES / THROWABLES'),('armor','ARMOR'),('booster','BOOSTERS')]
 
 def fit_image(path:Path,mw,mh):
+    if path.suffix.lower()=='.svg':
+        return mw, mh
     with Image.open(path) as im:w,h=im.size
     s=min(mw/w,mh/h);return w*s,h*s
+
+def compress_image(image_path: Path, max_width: int = 300, quality: int = 85) -> Path:
+    '''Compress image to reduce PDF size while maintaining quality for display.
+    For SVG files, returns the original path and lets PIL handle rendering via URL.'''
+    try:
+       # Skip SVG conversion - PIL and reportlab should handle SVG URLs directly
+       if image_path.suffix.lower() == '.svg':
+           # SVG files should be handled via their URL in the PDF layer
+           # not converted locally
+           return image_path
+        
+       with Image.open(image_path) as img:
+           w, h = img.size
+           # Convert to RGB if necessary (for PNG with transparency)
+           if img.mode in ('RGBA', 'LA', 'P'):
+               rgb_img = Image.new('RGB', img.size, (255, 255, 255))
+               rgb_img.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+               img = rgb_img
+             
+           # Resize if too large
+           if img.width > max_width:
+               ratio = max_width / img.width
+               new_height = int(img.height * ratio)
+               img = img.resize((max_width, new_height), Image.Resampling.LANCZOS)
+             
+           # Save compressed version
+           compressed_path = image_path.with_stem(image_path.stem + '_compressed')
+           img.save(compressed_path, 'JPEG', quality=quality, optimize=True)
+           return compressed_path
+    except Exception as e:
+       # If compression fails, return original
+       return image_path
 
 def _code(code):
     if not code:return ''
@@ -26,7 +60,9 @@ def _code(code):
     return ' '.join(symbols.get(x.casefold(),x) for x in code)
 
 def build_pdf(items:list[Item],warbonds:list[str],extras:set[str])->Path:
-    doc=SimpleDocTemplate(str(PDF_NAME),pagesize=A4,leftMargin=8*mm,rightMargin=8*mm,topMargin=8*mm,bottomMargin=8*mm,title='Helldivers 2 Owned Loadout Manual')
+    tmp_path=PDF_NAME.with_name(PDF_NAME.stem + '.tmp.pdf')
+    out_path=PDF_NAME.with_name(PDF_NAME.stem + '.new.pdf')
+    doc=SimpleDocTemplate(str(out_path),pagesize=A4,leftMargin=8*mm,rightMargin=8*mm,topMargin=8*mm,bottomMargin=8*mm,title='Helldivers 2 Owned Loadout Manual')
     st=getSampleStyleSheet(); title=ParagraphStyle('T',parent=st['Title'],fontSize=18,leading=20,alignment=TA_CENTER); h=ParagraphStyle('H',parent=st['Heading1'],fontSize=14,leading=16,spaceAfter=4*mm); card=ParagraphStyle('C',parent=st['BodyText'],fontSize=7,leading=8); tiny=ParagraphStyle('S',parent=st['BodyText'],fontSize=5.2,leading=6)
 
     # Resolve the wiki's actual Stratagem Arrow SVGs once. These are the same
@@ -63,22 +99,33 @@ def build_pdf(items:list[Item],warbonds:list[str],extras:set[str])->Path:
         group=sorted([x for x in items if x.kind==kind],key=lambda x:x.title.casefold())
         if not group:continue
         story.append(Paragraph(heading,h))
+        cols_per_row = 5 if kind=='stratagem' else 3
         rows=[];cells=[]
         for x in group:
-            p=download(x.image_url,x.key); w,hh=fit_image(p,42*mm,28*mm); img=RImage(str(p),width=w,height=hh)
+            p=download(x.image_url,x.key)
+            p=compress_image(p, max_width=96 if kind=='stratagem' else 300, quality=85)
+            max_w = 12*mm if kind=='stratagem' else 42*mm
+            max_h = 12*mm if kind=='stratagem' else 28*mm
+            if p.suffix.lower()=='.svg':
+                img = Paragraph('[icon]', tiny)
+            else:
+                w, hh = fit_image(p, max_w, max_h)
+                img = RImage(str(p), width=w, height=hh)
             extras_txt=''
             if kind=='stratagem': extras_txt=f'<br/>{_code(x.stratagem_code)}'
             stats=''
             if kind=='armor': stats=' · '.join(f'{k}: {v}' for k,v in x.stats.items() if k in ('armor','speed','stamina','passive'))
+            if kind=='booster': stats=(x.stats.get('description','') or '')
             content=[img,Paragraph(f'<b>{x.title}</b>{extras_txt}<br/>{stats}<br/><font size="4.5">{x.acquisition or x.source}</font>',card)]
             if kind=='stratagem' and x.stratagem_code:
                 content.insert(1,arrow_strip(x.stratagem_code))
             cells.append(content)
-            if len(cells)==3:rows.append(cells);cells=[]
+            if len(cells)==cols_per_row:rows.append(cells);cells=[]
         if cells:
-            while len(cells)<3:cells.append('')
+            while len(cells)<cols_per_row:cells.append([])
             rows.append(cells)
-        t=Table(rows,colWidths=[64*mm]*3,hAlign='LEFT')
+        col_width = 24*mm if kind=='stratagem' else 64*mm
+        t=Table(rows,colWidths=[col_width]*cols_per_row,hAlign='LEFT')
         t.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('BOX',(0,0),(-1,-1),.35,colors.grey),('INNERGRID',(0,0),(-1,-1),.2,colors.lightgrey),('LEFTPADDING',(0,0),(-1,-1),1.5*mm),('RIGHTPADDING',(0,0),(-1,-1),1.5*mm),('TOPPADDING',(0,0),(-1,-1),1.5*mm),('BOTTOMPADDING',(0,0),(-1,-1),1.5*mm)]))
         story += [t,Spacer(1,4*mm)]
     story += [PageBreak(),Paragraph('AUDIT — WHY IS THIS ITEM HERE?',h)]
@@ -86,4 +133,5 @@ def build_pdf(items:list[Item],warbonds:list[str],extras:set[str])->Path:
     for x in sorted(items,key=lambda z:(z.kind,z.title.casefold())):audit.append([x.kind,x.title,x.acquisition or x.source or 'explicit',x.url])
     t=Table(audit,colWidths=[20*mm,50*mm,55*mm,55*mm],repeatRows=1);t.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),colors.lightgrey),('GRID',(0,0),(-1,-1),.25,colors.grey),('FONTSIZE',(0,0),(-1,-1),5),('LEADING',(0,0),(-1,-1),6),('VALIGN',(0,0),(-1,-1),'TOP')]))
     story += [t,Spacer(1,4*mm),Paragraph(f'Source: https://helldivers.wiki.gg/wiki/ — {WIKI_LICENSE}. Helldivers and associated assets are property of their respective owners. Personal reference use.',tiny)]
-    doc.build(story);return PDF_NAME
+    doc.build(story)
+    return out_path

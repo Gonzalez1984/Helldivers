@@ -63,6 +63,12 @@ class WikiAPI:
     def imageinfo(self, filename: str, width=1200) -> dict:
         title=filename if filename.startswith('File:') else f'File:{filename}'
         data=self.get({'action':'query','titles':title,'prop':'imageinfo','iiprop':'url|mime|size|sha1|extmetadata','iiurlwidth':str(width)})
-        page=next(iter(data['query']['pages'].values())); info=page.get('imageinfo')
+        pages = data['query']['pages']
+        # formatversion=2 returns pages as a list, formatversion=1 as a dict
+        if isinstance(pages, list):
+            page = pages[0] if pages else {}
+        else:
+            page = next(iter(pages.values()))
+        info=page.get('imageinfo')
         if not info: raise WikiError(f'No imageinfo for {filename}')
         return info[0]

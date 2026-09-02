@@ -5,10 +5,9 @@ from .config import OWNED_NAME
 from .model import Item
 
 DEFAULT_WARBONDS = [
-    'Helldivers Mobilize!', 'Steeled Veterans', 'Democratic Detonation',
-    'Urban Legends', 'Servants of Freedom', 'Control Group', 'Dust Devils',
-    'Python Commandos', 'Siege Breakers', 'Borderline Justice',
-    'Entrenched Division', "Castellan's Creed",
+    'Helldivers Mobilize!', 'Steeled Veterans', 'Urban Legends',
+    'Servants of Freedom', 'Borderline Justice', 'Control Group', 'Dust Devils',
+    'Python Commandos', 'Siege Breakers', 'Entrenched Division',
 ]
 
 @dataclass
@@ -65,6 +64,13 @@ def is_mission_stratagem(item: Item) -> bool:
     mission_terms = (
         'mission stratagem', 'mission', 'objective', 'temporary permit',
         'weapons augmentation', 'major order temporary',
+        # Mission-only stratagems from wiki
+        'activate e-711', 'aquifer drill', 'call in super destroyer', 
+        'cargo container', 'dark fluid vessel', 'eagle rearm', 'hive breaker',
+        'hellbomb', 'portable comms relay', 'prospecting drill', 'reinforce',
+        'reinforcement pods', 'resupply', 'seaf artillery', 'seismic probe',
+        'sos beacon', 'sssd delivery', 'super earth flag', 'tactical video camera',
+        'tectonic drill', 'upload data', 'orbital illumination flare',
     )
     return any(t in s for t in mission_terms)
 
@@ -76,6 +82,11 @@ def owns_by_source(item: Item, selected_warbonds: set[str], base=True,
             return False
         if source_matches_warbond(item.source, selected_warbonds):
             return True
+        # Reject strategies from unselected warbonds
+        warbond_keywords = ('warbond','mobilize','veterans','cutting edge','democratic','polar','viper','freedom','chemical','truth','urban','servants','borderline','masters','force of law','control group','dust devils','python commandos','redacted regiment','siege breakers','entrenched division','exo experts','obedient democracy','righteous revenants','castellan')
+        s = (item.source or '').casefold()
+        if any(token in s for token in warbond_keywords):
+            return False
         # User explicitly asked us to assume all ordinary/basic stratagems and
         # things acquired along the way are already owned. This covers the
         # normal Ship Management tree, including Support Weapons, Backpacks,
@@ -86,7 +97,12 @@ def owns_by_source(item: Item, selected_warbonds: set[str], base=True,
 
     if source_matches_warbond(item.source, selected_warbonds):
         return True
-    if base and any(k in (item.source or '').casefold() for k in ('starter equipment', 'free')):
+    # Explicitly reject items from unselected warbonds
+    warbond_keywords = ('warbond','mobilize','veterans','cutting edge','democratic','polar','viper','freedom','chemical','truth','urban','servants','borderline','masters','force of law','control group','dust devils','python commandos','redacted regiment','siege breakers','entrenched division','exo experts','obedient democracy','righteous revenants','castellan')
+    s = (item.source or '').casefold()
+    if any(token in s for token in warbond_keywords):
+        return False
+    if base and any(k in s for k in ('starter equipment', 'free')):
         return True
     return False
 
