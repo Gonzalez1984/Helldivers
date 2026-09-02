@@ -134,3 +134,10 @@ def parse_stratagem_catalog(html:str)->list[Item]:
             # validation, where they are rejected from ownership.
             out.append(Item(title,'stratagem',page_url(title),source=source,acquisition=source,stats=vals,stratagem_code=code))
     return list({x.key:x for x in out}.values())
+
+def parse_weapons_from_category(titles:list[str], kind:str)->list[Item]:
+    '''Parse weapons from category member list. All base weapons are free/starter equipment.'''
+    out=[]
+    for title in titles:
+        out.append(Item(title,kind,page_url(title),source='Free Starter Equipment',acquisition='Free',stats={}))
+    return out

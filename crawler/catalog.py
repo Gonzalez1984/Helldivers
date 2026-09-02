@@ -1,6 +1,6 @@
 from __future__ import annotations
 from .api import WikiAPI
-from .parse import parse_catalog, parse_stratagem_catalog
+from .parse import parse_catalog, parse_stratagem_catalog, parse_weapons_from_category
 
 # These pages are stable semantic indexes on the wiki. We use their rendered
 # tables instead of scraping visual cards or guessing from category names.
@@ -16,6 +16,12 @@ CATALOGS={
 def load_catalog(api: WikiAPI, kind: str):
     '''Load catalog for the given kind. Returns empty list if page not found.'''
     try:
+        # Weapons are now loaded from categories instead of table pages
+        if kind in ('primary', 'secondary'):
+            cat_name = 'Primary Weapons' if kind == 'primary' else 'Secondary Weapons'
+            titles = api.category_members(cat_name)
+            return parse_weapons_from_category(titles, kind)
+        
         html = api.rendered_html(CATALOGS[kind])
         if kind == 'stratagem':
             return parse_stratagem_catalog(html)
