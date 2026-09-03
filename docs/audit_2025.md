@@ -105,11 +105,11 @@ Ujednolicić pozyskiwanie katalogów: dla kind-ów gdzie istnieje stabilna kateg
 - Zmiana `load_catalog` na nie-cichy fail: niskie ryzyko techniczne, ale zmienia UX (pipeline może teraz "crashować" tam gdzie wcześniej cicho dawał 0) — wymaga jawnej zgody użytkownika co do zachowania.
 - Rozszerzenie modelu danych o `provenance`/`ownership_status`: większy refaktor, dotyka `model.py`, `catalog.py`, `ownership.py`, `pdf.py`, `validate.py` jednocześnie — wysokie ryzyko regresji bez testów, powinno być rozbite na osobne PR-y.
 
-## 19. OPEN QUESTIONS FOR USER
+## 19. OPEN QUESTIONS FOR USER — RESOLVED
 
-- Czy chcesz, by literalne niedopasowanie tekstu Warbondu (np. brak `!`) traktować jako miękki fallback (normalizacja interpunkcji) czy wolisz naprawić samą stałą `DEFAULT_WARBONDS`?
-- Czy `load_catalog()` powinien w przyszłości **crashować** (twardy fail) przy błędzie pobrania katalogu podstawowego kind-u, czy zostać przy obecnym cichym `[]` + printem?
-- Czy chcesz też, żebym w kolejnym kroku zweryfikował zgodność kluczy (`Item.key`) między `parse_warbond_rewards()` a per-kind katalogami (sekcja 6), zanim zaczniemy cokolwiek zmieniać?
+- ~~Czy chcesz, by literalne niedopasowanie tekstu Warbondu (np. brak `!`) traktować jako miękki fallback (normalizacja interpunkcji) czy wolisz naprawić samą stałą `DEFAULT_WARBONDS`?~~ **Rozwiązane**: dodano miękką normalizację (`_normalize_warbond_text()` w `ownership.py`, reużywana w `validate.py`).
+- ~~Czy `load_catalog()` powinien w przyszłości **crashować** (twardy fail) przy błędzie pobrania katalogu podstawowego kind-u, czy zostać przy obecnym cichym `[]` + printem?~~ **Decyzja użytkownika (2026-09-03): zostawić ciche zachowanie.** `load_catalog()` w `crawler/catalog.py` nadal łapie wszystkie wyjątki i zwraca `[]` z printem ostrzeżenia — nie zmieniać tego bez ponownej wyraźnej zgody użytkownika.
+- Czy chcesz też, żebym w kolejnym kroku zweryfikował zgodność kluczy (`Item.key`) między `parse_warbond_rewards()` a per-kind katalogami (sekcja 6), zanim zaczniemy cokolwiek zmieniać? — **wciąż otwarte**, nie podjęto decyzji.
 
 ## 20. RECOMMENDED NEXT IMPLEMENTATION STEP
 
