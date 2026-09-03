@@ -109,7 +109,7 @@ Ujednolicić pozyskiwanie katalogów: dla kind-ów gdzie istnieje stabilna kateg
 
 - ~~Czy chcesz, by literalne niedopasowanie tekstu Warbondu (np. brak `!`) traktować jako miękki fallback (normalizacja interpunkcji) czy wolisz naprawić samą stałą `DEFAULT_WARBONDS`?~~ **Rozwiązane**: dodano miękką normalizację (`_normalize_warbond_text()` w `ownership.py`, reużywana w `validate.py`).
 - ~~Czy `load_catalog()` powinien w przyszłości **crashować** (twardy fail) przy błędzie pobrania katalogu podstawowego kind-u, czy zostać przy obecnym cichym `[]` + printem?~~ **Decyzja użytkownika (2026-09-03): zostawić ciche zachowanie.** `load_catalog()` w `crawler/catalog.py` nadal łapie wszystkie wyjątki i zwraca `[]` z printem ostrzeżenia — nie zmieniać tego bez ponownej wyraźnej zgody użytkownika.
-- Czy chcesz też, żebym w kolejnym kroku zweryfikował zgodność kluczy (`Item.key`) między `parse_warbond_rewards()` a per-kind katalogami (sekcja 6), zanim zaczniemy cokolwiek zmieniać? — **wciąż otwarte**, nie podjęto decyzji.
+- Czy chcesz też, żebym w kolejnym kroku zweryfikował zgodność kluczy (`Item.key`) między `parse_warbond_rewards()` a per-kind katalogami (sekcja 6), zanim zaczniemy cokolwiek zmieniać? — **Sprawdzone (2026-09-03)**: dla wszystkich 10 Warbondów w `DEFAULT_WARBONDS`, każdy `Item.key` zwrócony przez `parse_warbond_rewards()` ma dokładnie pasujący klucz w co najmniej jednym per-kind katalogu (0 rozbieżności). Ryzyko opisane w sekcji 6 (literówki/różnice w apostrofach/spacjach rozłączające te dwa źródła) jest **teoretyczne, obecnie niezmaterializowane** — warto dodać to jako test regresyjny (patrz sekcja 14), ale nie wymaga natychmiastowej poprawki kodu.
 
 ## 20. RECOMMENDED NEXT IMPLEMENTATION STEP
 
