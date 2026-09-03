@@ -2,7 +2,9 @@
 
 Rules only. For usage/pipeline/scope see `README.md`; for root-cause writeups,
 resolved decisions and pitfalls see `docs/audit_2025.md` and
-`docs/lessons_learned.md` — read both before touching `crawler/`.
+`docs/lessons_learned.md` — read both before touching `crawler/`. For a full
+architectural/domain audit (source-of-truth model, ownership model, catalog
+model, proposed data model) see `docs/audit_technical_assessment.md`.
 
 - Catalog membership is not ownership. The wiki describes what exists in the
   game, not what a player owns. Never collapse "item is in a catalog" into
