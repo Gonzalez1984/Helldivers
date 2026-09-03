@@ -4,6 +4,17 @@ from .model import Item
 from .ownership import is_mission_stratagem, _normalize_warbond_text
 
 def validate(catalogs:dict[str,list[Item]],owned:list[Item],warbonds:list[str],extras:set[str],assume_all_non_mission_stratagems=True):
+    # An empty catalog for any kind almost always means a wiki page/category
+    # name went stale or the page structure changed (as happened with the
+    # 'Throwables' page), not that the game genuinely has zero items of that
+    # kind. load_catalog() itself stays lenient (catches fetch errors and
+    # returns [] so one bad page doesn't crash catalog loading for the rest),
+    # but silently shipping a PDF missing an entire category is worse than
+    # failing loudly here, where the user gets an actionable error instead of
+    # just noticing "booster: 0" in the final printed summary.
+    empty_kinds=[kind for kind,items in catalogs.items() if not items]
+    if empty_kinds:
+        raise RuntimeError(f'Catalog(s) came back empty, likely a stale wiki page/category name: {empty_kinds}')
     if not owned: raise RuntimeError('Ownership result is empty; refusing to generate PDF.')
     keys=[x.key for x in owned]; dup=[k for k,n in Counter(keys).items() if n>1]
     if dup: raise RuntimeError(f'Duplicate canonical IDs: {dup}')
