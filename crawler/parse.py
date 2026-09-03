@@ -1,5 +1,6 @@
 from __future__ import annotations
 import re
+from urllib.parse import unquote
 from bs4 import BeautifulSoup
 from .model import Item
 
@@ -20,7 +21,7 @@ def clean(s:str)->str:
 def canonical_title(href:str, text:str)->str:
     if href and '/wiki/' in href:
         x=href.split('/wiki/',1)[1].split('#',1)[0]
-        x=x.replace('_',' ')
+        x=unquote(x).replace('_',' ')
         return clean(x)
     return clean(text)
 

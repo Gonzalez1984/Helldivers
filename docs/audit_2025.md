@@ -105,11 +105,11 @@ Ujednolicić pozyskiwanie katalogów: dla kind-ów gdzie istnieje stabilna kateg
 - Zmiana `load_catalog` na nie-cichy fail: niskie ryzyko techniczne, ale zmienia UX (pipeline może teraz "crashować" tam gdzie wcześniej cicho dawał 0) — wymaga jawnej zgody użytkownika co do zachowania.
 - Rozszerzenie modelu danych o `provenance`/`ownership_status`: większy refaktor, dotyka `model.py`, `catalog.py`, `ownership.py`, `pdf.py`, `validate.py` jednocześnie — wysokie ryzyko regresji bez testów, powinno być rozbite na osobne PR-y.
 
-## 19. OPEN QUESTIONS FOR USER
+## 19. OPEN QUESTIONS FOR USER — RESOLVED
 
-- Czy chcesz, by literalne niedopasowanie tekstu Warbondu (np. brak `!`) traktować jako miękki fallback (normalizacja interpunkcji) czy wolisz naprawić samą stałą `DEFAULT_WARBONDS`?
-- Czy `load_catalog()` powinien w przyszłości **crashować** (twardy fail) przy błędzie pobrania katalogu podstawowego kind-u, czy zostać przy obecnym cichym `[]` + printem?
-- Czy chcesz też, żebym w kolejnym kroku zweryfikował zgodność kluczy (`Item.key`) między `parse_warbond_rewards()` a per-kind katalogami (sekcja 6), zanim zaczniemy cokolwiek zmieniać?
+- ~~Czy chcesz, by literalne niedopasowanie tekstu Warbondu (np. brak `!`) traktować jako miękki fallback (normalizacja interpunkcji) czy wolisz naprawić samą stałą `DEFAULT_WARBONDS`?~~ **Rozwiązane**: dodano miękką normalizację (`_normalize_warbond_text()` w `ownership.py`, reużywana w `validate.py`).
+- ~~Czy `load_catalog()` powinien w przyszłości **crashować** (twardy fail) przy błędzie pobrania katalogu podstawowego kind-u, czy zostać przy obecnym cichym `[]` + printem?~~ **Decyzja użytkownika (2026-09-03): zostawić ciche zachowanie na poziomie `load_catalog()`.** `load_catalog()` w `crawler/catalog.py` nadal łapie wszystkie wyjątki i zwraca `[]` z printem ostrzeżenia. Jednak żeby pusty katalog nie ginął w ciszy aż do wygenerowania PDF-a, dodano osobny twardy check w `crawler/validate.py`: jeśli **cały** katalog danego kind-u wraca pusty, `validate()` rzuca `RuntimeError` z listą brakujących kind-ów. To rozróżnienie zachowuje odporność ładowania per-item/per-page przy jednoczesnym głośnym sygnalizowaniu systemowego problemu (dokładnie ten scenariusz, który pozwolił `throwable=0` przejść niezauważenie).
+- ~~Czy chcesz też, żebym w kolejnym kroku zweryfikował zgodność kluczy (`Item.key`) między `parse_warbond_rewards()` a per-kind katalogami (sekcja 6), zanim zaczniemy cokolwiek zmieniać?~~ **Sprawdzone (2026-09-03)**: dla wszystkich 10 Warbondów w `DEFAULT_WARBONDS`, każdy `Item.key` zwrócony przez `parse_warbond_rewards()` ma dokładnie pasujący klucz w co najmniej jednym per-kind katalogu (0 rozbieżności). Ryzyko opisane w sekcji 6 (literówki/różnice w apostrofach/spacjach rozłączające te dwa źródła) jest **teoretyczne, obecnie niezmaterializowane** — warto dodać to jako test regresyjny (patrz sekcja 14), ale nie wymaga natychmiastowej poprawki kodu.
 
 ## 20. RECOMMENDED NEXT IMPLEMENTATION STEP
 
