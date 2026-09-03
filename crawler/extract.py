@@ -24,6 +24,10 @@ def _score(filename:str,kind:str)->int:
     if n.endswith('.svg'): score-=50
     return score
 
+def _is_bad(filename:str)->bool:
+    n=filename.casefold()
+    return any(b in n for b in BAD)
+
 def resolve_image(api:WikiAPI,item:Item)->Item:
     # If the catalog table exposed a dedicated Icon column with a direct
     # File: link, prefer it over guessing from the page's image gallery —
@@ -50,9 +54,6 @@ def resolve_image(api:WikiAPI,item:Item)->Item:
     errors=[]
     for filename in candidates[:30]:
         try:
-            # Skip SVG files - they can't be embedded directly in PDFs
-            if filename.lower().endswith('.svg'):
-                continue
             info=api.imageinfo(filename)
             # imageinfo returns a dict with image info
             if not isinstance(info, dict):
@@ -60,7 +61,7 @@ def resolve_image(api:WikiAPI,item:Item)->Item:
                 continue
             if not info.get('mime','').startswith('image/'): 
                 continue
-            if _score(filename,item.kind)<0: 
+            if _is_bad(filename): 
                 continue
             item.image_file=filename
             item.image_url=info.get('thumburl') or info.get('url')
