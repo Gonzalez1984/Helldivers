@@ -1,6 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 import json
+import re
 from .config import OWNED_NAME
 from .model import Item
 
@@ -49,9 +50,16 @@ def choose_extras(items: list[Item], selected_warbonds: list[str] | None = None)
     return {rows[i - 1].title for i in ids}
 
 
+def _normalize_warbond_text(s: str) -> str:
+    # Wiki source text sometimes drops punctuation (e.g. "Helldivers Mobilize"
+    # instead of "Helldivers Mobilize!"). Strip common punctuation before
+    # comparing so these cosmetic differences don't break ownership matching.
+    return re.sub(r"[!'\u2019]", '', s or '').casefold()
+
+
 def source_matches_warbond(source: str, warbonds: list[str] | set[str]) -> bool:
-    s = (source or '').casefold()
-    return any(w.casefold() in s for w in warbonds)
+    s = _normalize_warbond_text(source)
+    return any(_normalize_warbond_text(w) in s for w in warbonds)
 
 
 def is_mission_stratagem(item: Item) -> bool:

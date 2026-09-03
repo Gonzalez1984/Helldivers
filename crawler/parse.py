@@ -99,7 +99,17 @@ def parse_catalog(html:str, kind:str, default_source='') -> list[Item]:
             title,_=link
             vals={k:clean(v.get_text(' ',strip=True)) for k,v in row.items()}
             source=vals.get('source',vals.get('acquisition',vals.get('warbond',default_source)))
-            out.append(Item(title,kind,page_url(title),source=source,acquisition=source,stats=vals))
+            item=Item(title,kind,page_url(title),source=source,acquisition=source,stats=vals)
+            # Some catalog tables expose a dedicated Icon column with a direct
+            # File: link. Prefer that over guessing from page image galleries,
+            # since it's unambiguous and works even when the icon is an .svg.
+            if 'icon' in headers:
+                icon_cell=row.get('icon')
+                if icon_cell:
+                    icon_link=icon_cell.find('a', href=True)
+                    if icon_link and '/wiki/File:' in icon_link['href']:
+                        item.stats['icon_file']=icon_link['href'].split('/wiki/File:',1)[1]
+            out.append(item)
     return list({x.key:x for x in out}.values())
 
 def parse_stratagem_catalog(html:str)->list[Item]:

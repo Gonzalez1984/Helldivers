@@ -7,19 +7,28 @@ from .parse import parse_catalog, parse_stratagem_catalog, parse_weapons_from_ca
 CATALOGS={
  'primary': 'Primary Weapons',
  'secondary': 'Secondary Weapons',
- 'throwable': 'Throwables',
  'armor': 'Armor',
  'booster': 'Boosters',
  'stratagem': 'Stratagems',
 }
 
+# Category names used for kinds that are more reliably enumerated via
+# MediaWiki category membership than by parsing a page's HTML table.
+# "Throwable" is a redirect to a section of the Weapons page (no table of
+# its own), but Category:Throwables lists every throwable item directly.
+CATEGORY_CATALOGS={
+ 'primary': 'Primary Weapons',
+ 'secondary': 'Secondary Weapons',
+ 'throwable': 'Throwables',
+}
+
 def load_catalog(api: WikiAPI, kind: str):
     '''Load catalog for the given kind. Returns empty list if page not found.'''
     try:
-        # Weapons are now loaded from categories instead of table pages
-        if kind in ('primary', 'secondary'):
-            cat_name = 'Primary Weapons' if kind == 'primary' else 'Secondary Weapons'
-            titles = api.category_members(cat_name)
+        # Weapons and throwables are loaded from categories instead of table
+        # pages, since their table-based pages are missing or are redirects.
+        if kind in CATEGORY_CATALOGS:
+            titles = api.category_members(CATEGORY_CATALOGS[kind])
             return parse_weapons_from_category(titles, kind)
         
         html = api.rendered_html(CATALOGS[kind])
