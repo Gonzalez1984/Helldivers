@@ -25,21 +25,22 @@ def _score(filename:str,kind:str)->int:
     return score
 
 def resolve_image(api:WikiAPI,item:Item)->Item:
-    # Stratagems expose their correct icon directly in the parsed table.
-    # Use that source instead of page images, which are noisy background assets.
-    if item.kind=='stratagem':
-        icon_file=item.stats.get('icon_file') if item.stats else None
-        if icon_file:
-            try:
-                info=api.imageinfo(icon_file, width=64)
-                if isinstance(info, dict) and info.get('mime','').startswith('image/'):
-                    item.image_file=icon_file
-                    item.image_url=info.get('thumburl') or info.get('url')
-                    item.image_sha1=info.get('sha1')
-                    item.image_license=(info.get('extmetadata',{}).get('LicenseShortName',{}).get('value') or '')
-                    return item
-            except Exception:
-                pass
+    # If the catalog table exposed a dedicated Icon column with a direct
+    # File: link, prefer it over guessing from the page's image gallery —
+    # it's unambiguous and works even when the icon is an .svg (boosters,
+    # stratagems), which page-image scoring below would otherwise skip.
+    icon_file=item.stats.get('icon_file') if item.stats else None
+    if icon_file:
+        try:
+            info=api.imageinfo(icon_file, width=64)
+            if isinstance(info, dict) and info.get('mime','').startswith('image/'):
+                item.image_file=icon_file
+                item.image_url=info.get('thumburl') or info.get('url')
+                item.image_sha1=info.get('sha1')
+                item.image_license=(info.get('extmetadata',{}).get('LicenseShortName',{}).get('value') or '')
+                return item
+        except Exception:
+            pass
     
     page=api.pages([item.title],prop='images')
     if not page: raise RuntimeError(f'No page image list: {item.title}')

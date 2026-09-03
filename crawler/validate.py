@@ -1,7 +1,7 @@
 from __future__ import annotations
 from collections import Counter
 from .model import Item
-from .ownership import is_mission_stratagem
+from .ownership import is_mission_stratagem, _normalize_warbond_text
 
 def validate(catalogs:dict[str,list[Item]],owned:list[Item],warbonds:list[str],extras:set[str],assume_all_non_mission_stratagems=True):
     if not owned: raise RuntimeError('Ownership result is empty; refusing to generate PDF.')
@@ -14,15 +14,15 @@ def validate(catalogs:dict[str,list[Item]],owned:list[Item],warbonds:list[str],e
             if not has_evidence: raise RuntimeError(f'No ownership evidence: {x.title}')
     # Ensure every selected Warbond is actually represented in the catalog.
     for wb in warbonds:
-        if not any((wb.casefold() in (x.source or '').casefold()) for xs in catalogs.values() for x in xs):
+        if not any((_normalize_warbond_text(wb) in _normalize_warbond_text(x.source)) for xs in catalogs.values() for x in xs):
             raise RuntimeError(f'Selected Warbond has no recognized catalog rewards: {wb}')
     # Boosters are loadout equipment, so they are subject to the same strict
     # Warbond/source ownership validation as weapons and armor.
     # Never silently include an item from an unselected Warbond.
-    selected={w.casefold() for w in warbonds}
+    selected={_normalize_warbond_text(w) for w in warbonds}
     bad=[]
     for x in owned:
-        s=(x.source or '').casefold()
+        s=_normalize_warbond_text(x.source)
         if x.kind!='stratagem' and any(token in s for token in ('warbond','mobilize','veterans','cutting edge','democratic','polar','viper','freedom','chemical','truth','urban','servants','borderline','masters','force of law','control group','dust devils','python commandos','redacted regiment','siege breakers','entrenched division','exo experts','obedient democracy','righteous revenants','castellan')):
             if not any(w in s for w in selected):
                 bad.append(x.title)

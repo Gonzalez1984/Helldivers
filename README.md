@@ -18,6 +18,13 @@ This version deliberately uses the wiki's **semantic catalog tables** rather tha
 
 The wiki explicitly says most personal weapons are unlocked through Warbonds, with exceptions, while support weapons are commonly acquired through Ship Management. Stratagems have several acquisition routes. Therefore a simple `page exists => user owns it` rule is wrong.
 
+## Maintainer notes
+
+Before making further changes to `crawler/`, read:
+- `docs/audit_2025.md` — full architectural/domain audit (ownership model, catalog model, image resolution, validation gaps, proposed fixes).
+- `docs/lessons_learned.md` — concrete pitfalls hit while debugging `throwable=0`/`booster` bugs (duplicated substring-matching logic, unverified wiki page names, `.svg` handling, Windows environment quirks). Read this first if you're picking up a bug report about wrong per-kind counts.
+
+
 The PDF's audit page records the acquisition/source used for every included entry.
 
 ## Requirements

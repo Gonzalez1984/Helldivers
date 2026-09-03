@@ -59,9 +59,18 @@ def _code(code):
     symbols={'up':'↑','down':'↓','left':'←','right':'→','u':'↑','d':'↓','l':'←','r':'→'}
     return ' '.join(symbols.get(x.casefold(),x) for x in code)
 
+def _next_version_path()->Path:
+    '''Find the next unused helldivers_loadout.vN.pdf path in the output dir.'''
+    n=1
+    while True:
+        candidate=PDF_NAME.with_name(f'{PDF_NAME.stem}.v{n}.pdf')
+        if not candidate.exists():
+            return candidate
+        n+=1
+
 def build_pdf(items:list[Item],warbonds:list[str],extras:set[str])->Path:
     tmp_path=PDF_NAME.with_name(PDF_NAME.stem + '.tmp.pdf')
-    out_path=PDF_NAME.with_name(PDF_NAME.stem + '.new.pdf')
+    out_path=_next_version_path()
     doc=SimpleDocTemplate(str(out_path),pagesize=A4,leftMargin=8*mm,rightMargin=8*mm,topMargin=8*mm,bottomMargin=8*mm,title='Helldivers 2 Owned Loadout Manual')
     st=getSampleStyleSheet(); title=ParagraphStyle('T',parent=st['Title'],fontSize=18,leading=20,alignment=TA_CENTER); h=ParagraphStyle('H',parent=st['Heading1'],fontSize=14,leading=16,spaceAfter=4*mm); card=ParagraphStyle('C',parent=st['BodyText'],fontSize=7,leading=8); tiny=ParagraphStyle('S',parent=st['BodyText'],fontSize=5.2,leading=6)
 
