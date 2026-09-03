@@ -25,3 +25,7 @@ resolved decisions and pitfalls see `docs/audit_2025.md` and
 - Before changing Warbond-name matching or ownership heuristics, read
   `docs/lessons_learned.md` §1–2 (duplicated matching logic, unverified wiki
   page names).
+- Never trust a wiki link's anchor/display text as the canonical page title.
+  It can be the title of a redirect stub. Always resolve the actual target
+  (e.g. `redirects=1` on `action=parse`, or the href-derived title) before
+  fetching content by name.
